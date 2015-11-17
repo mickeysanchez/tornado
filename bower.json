@@ -1,0 +1,9 @@
+{
+  "name": "temp",
+  "version": "0.0.0",
+  "dependencies": {
+    "threejs": "",
+    "chance": "~0.8.0",
+    "tween.js": "tweenjs#~16.3.1"
+  }
+}
