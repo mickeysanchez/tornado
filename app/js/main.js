@@ -113,8 +113,8 @@
 
             segment.rotation.x = Math.PI / 2;
             segment.position.y = -(i * 35) + (NUM_SEGMENTS * 35);
-            // segment.position.z -= 2000;
-            // segment.position.x -= 1500;
+            segment.position.z -= 2000;
+            segment.position.x -= 1500;
             segment.userData.spinSpeed = chance.floating({
                 min: 0.05,
                 max: 0.12
