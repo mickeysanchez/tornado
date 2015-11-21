@@ -35,9 +35,16 @@
     window.addEventListener('keyup', function(event) {
         Key.onKeyup(event);
     }, false);
+
     window.addEventListener('keydown', function(event) {
         Key.onKeydown(event);
+        hideMenu();
     }, false);
+
+    function hideMenu() {
+        var menu = document.getElementById('overlay');
+        menu.style.display = 'none';
+    }
 
     function basicFloorGrid(linesWidth, linesHeight, steps, gridColor) {
         steps = steps || 2;
@@ -65,7 +72,7 @@
         camera.position.y = 400;
         camera.position.z = 1000;
 
-        floorGrid = basicFloorGrid(10000, 0, 500, '#CE9668');
+        floorGrid = basicFloorGrid(100000, 0, 500, '#CE9668');
         scene.add(floorGrid);
 
         NUM_HOUSES = 20;
@@ -161,8 +168,8 @@
                 max: 15000
             })
             cloud.position.y = chance.floating({
-                min: 1000,
-                max: 4000
+                min: 2000,
+                max: 6000
             });
             cloud.position.z = -8000
             clouds.push(cloud);
@@ -284,6 +291,8 @@
             var cloud = clouds[i];
             cloud.position.x += 3;
         }
+
+        camera.position.z -= 1;
 
         renderer.render(scene, camera);
     }
