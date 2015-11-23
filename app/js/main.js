@@ -38,9 +38,16 @@
     window.addEventListener('keyup', function(event) {
         Key.onKeyup(event);
     }, false);
+
     window.addEventListener('keydown', function(event) {
         Key.onKeydown(event);
+        hideMenu();
     }, false);
+
+    function hideMenu() {
+        var menu = document.getElementById('overlay');
+        menu.style.display = 'none';
+    }
 
     function basicFloorGrid(linesWidth, linesHeight, steps, gridColor) {
         steps = steps || 2;
@@ -165,8 +172,8 @@
                 max: 20000
             })
             cloud.position.y = chance.floating({
-                min: 1500,
-                max: 4000
+                min: 2000,
+                max: 6000
             });
             cloud.position.z = -8000
             clouds.push(cloud);
@@ -410,6 +417,8 @@
 
         camera.position.z -= PAN_SPEED;
         TOTAL_PAN += PAN_SPEED;
+        camera.position.z -= 1;
+
         renderer.render(scene, camera);
     }
 
