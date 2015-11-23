@@ -4,8 +4,11 @@
     var segments = [];
     var houses = [];
     var clouds = [];
+    var raindrops = [];
 
     SPEED = 10;
+    PAN_SPEED = 2;
+    TOTAL_PAN = 0;
 
     var Key = {
         _pressed: {},
@@ -62,13 +65,14 @@
         scene = new THREE.Scene();
 
         camera = new THREE.PerspectiveCamera(100, window.innerWidth / window.innerHeight, 1, 10000);
+        // camera = new THREE.OrthographicCamera(window.innerWidth / -2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / -2, 1, 100000)
         camera.position.y = 400;
         camera.position.z = 1000;
 
-        floorGrid = basicFloorGrid(10000, 0, 500, '#CE9668');
+        floorGrid = basicFloorGrid(30000, 0, 500, '#CE9668');
         scene.add(floorGrid);
 
-        NUM_HOUSES = 20;
+        NUM_HOUSES = 100;
         for (var i = 0; i < NUM_HOUSES; i++) {
             var house = new THREE.Object3D();
             var geometry = new THREE.BoxGeometry(30, 30, 30, 1, 1, 1);
@@ -85,11 +89,11 @@
             });
             house.position.y = 40;
             house.position.x += chance.floating({
-                min: -1000,
-                max: 1000
+                min: -6000,
+                max: 6000
             })
             house.position.z += chance.floating({
-                min: -1000,
+                min: -10000,
                 max: 1000
             })
 
@@ -137,7 +141,7 @@
                 var geometry = new THREE.SphereGeometry(chance.floating({
                     min: 300,
                     max: 600
-                }), 10, 10);
+                }), 6, 6);
                 var material = new THREE.MeshBasicMaterial({
                     color: '#444'
                 });
@@ -157,16 +161,41 @@
                 cloud.add(mesh);
             }
             cloud.position.x = chance.floating({
-                min: -15000,
-                max: 15000
+                min: -20000,
+                max: 20000
             })
             cloud.position.y = chance.floating({
-                min: 1000,
+                min: 1500,
                 max: 4000
             });
             cloud.position.z = -8000
             clouds.push(cloud);
             scene.add(cloud);
+        }
+
+        // RAIN
+        RAIN_DROP_NUM = 1000;
+        for (var i = 0; i < RAIN_DROP_NUM; i++) {
+            var geometry = new THREE.PlaneGeometry(5, 20, 32);
+            var material = new THREE.MeshBasicMaterial({
+                color: '#3B63B5',
+                side: THREE.DoubleSide
+            });
+            var plane = new THREE.Mesh(geometry, material);
+            plane.position.x = chance.floating({
+                min: -10000,
+                max: 10000
+            })
+            plane.position.y = chance.floating({
+                min: -1000,
+                max: 2000
+            })
+            plane.position.z = chance.floating({
+                min: -10000,
+                max: 1000
+            })
+            scene.add(plane);
+            raindrops.push(plane);
         }
 
         renderer = new THREE.WebGLRenderer();
@@ -178,7 +207,24 @@
         );
 
         document.body.appendChild(renderer.domElement);
+
+        i = document.getElementsByTagName('body')[0]
+        i.addEventListener('click', function() {
+            // go full-screen
+            if (i.requestFullscreen) {
+                i.requestFullscreen();
+            } else if (i.webkitRequestFullscreen) {
+                i.webkitRequestFullscreen();
+            } else if (i.mozRequestFullScreen) {
+                i.mozRequestFullScreen();
+            } else if (i.msRequestFullscreen) {
+                i.msRequestFullscreen();
+            }
+        });
     }
+
+    SUCK_SPEED = .3;
+    var lastDirection = new THREE.Vector3(0, 0, 0);
 
     function animate() {
 
@@ -211,14 +257,20 @@
 
                 for (var j = 1; j < segmentBeneath.children.length; j++) {
                     var child = segmentBeneath.children[j];
-                    child.position.y += .4;
-                    if (chance.bool({
-                            likelihood: 10
-                        })) {
-                        // if (child.position.z < 0)
-                        //     child.position.z += .1;
-                        // child.position.z = 0
-                        segment.add(child);
+                    if (child.position.z >= -35) {
+                        if (child.position.z - SUCK_SPEED > -35) {
+                            child.position.z = -35;
+                        } else {
+                            child.position.z -= SUCK_SPEED;
+                        }
+                    } else {
+                        if (chance.bool({
+                                likelihood: 90
+                            })) {
+                            child.position.y += 2;
+                            child.position.z = 0;
+                            segment.add(child);
+                        }
                     }
                 }
             }
@@ -226,7 +278,16 @@
 
         // Move bottom segment of tornado:
         var bottomSegment = segments[segments.length - 1];
-        var direction = new THREE.Vector3(0, 0, 0)
+
+        camera.updateMatrix(); // make sure camera's local matrix is updated
+        camera.updateMatrixWorld(); // make sure camera's world matrix is updated
+        camera.matrixWorldInverse.getInverse(camera.matrixWorld);
+        bottomSegment.updateMatrix(); // make sure plane's local matrix is updated
+        bottomSegment.updateMatrixWorld(); // make sure plane's world matrix is updated
+        var frustum = new THREE.Frustum();
+        frustum.setFromMatrix(new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+
+        var direction = new THREE.Vector3(0, 0, 0);
         if (Key.any()) {
             if (Key.isDown(Key.RIGHT)) {
                 direction.x += 1;
@@ -237,16 +298,30 @@
             }
 
             if (Key.isDown(Key.UP)) {
-                direction.z -= 1;
+                if (bottomSegment.position.z > -8500)
+                    direction.z -= 1;
             }
 
             if (Key.isDown(Key.DOWN)) {
-                direction.z += 1;
+                if (bottomSegment.position.z < 600)
+                    direction.z += 1;
             }
 
             bottomSegment.position.add(direction.normalize().multiplyScalar(SPEED));
         } else {
-
+            // if (chance.bool({
+            //         likelihood: 10
+            //     }))
+            //     lastDirection = new THREE.Vector3(chance.floating({
+            //             min: -1,
+            //             max: 1
+            //         }),
+            //         0,
+            //         chance.floating({
+            //             min: -1,
+            //             max: 1
+            //         }))
+            // bottomSegment.position.add(lastDirection.normalize().multiplyScalar(SPEED));
         }
 
         for (var i = 0; i < houses.length; i++) {
@@ -278,13 +353,63 @@
                 //     house.position.y = 50;
                 // }
             }
+
+            house.updateMatrix(); // make sure plane's local matrix is updated
+            house.updateMatrixWorld(); // make sure plane's world matrix is updated
+            if (!frustum.containsPoint(house.position)) {
+                house.position.x += chance.floating({
+                    min: -6000 - TOTAL_PAN,
+                    max: 6000 - TOTAL_PAN
+                })
+                house.position.z += chance.floating({
+                    min: -10000 - TOTAL_PAN,
+                    max: 1000 - TOTAL_PAN
+                })
+            }
         }
 
+        // CLOUDS
         for (var i = 0; i < clouds.length; i++) {
             var cloud = clouds[i];
-            cloud.position.x += 3;
+            cloud.position.x += chance.floating({
+                min: 3,
+                max: 10
+            });
+            if (cloud.position.x > 20000) {
+                cloud.position.x = chance.floating({
+                    min: -25000,
+                    max: -20000
+                })
+                cloud.position.y = chance.floating({
+                    min: 1500,
+                    max: 4000
+                });
+                cloud.position.z -= TOTAL_PAN;
+            }
         }
 
+        // RAINDROPS
+        for (var i = 0; i < raindrops.length; i++) {
+            var raindrop = raindrops[i];
+            raindrop.position.y -= 30;
+            if (raindrop.position.y < -300) {
+                raindrop.position.x = chance.floating({
+                    min: -10000,
+                    max: 10000
+                })
+                raindrop.position.y = chance.floating({
+                    min: 3000,
+                    max: 4500
+                });
+                raindrop.position.z = chance.floating({
+                    min: -10000 - TOTAL_PAN,
+                    max: 1000 - TOTAL_PAN
+                })
+            }
+        }
+
+        camera.position.z -= PAN_SPEED;
+        TOTAL_PAN += PAN_SPEED;
         renderer.render(scene, camera);
     }
 
