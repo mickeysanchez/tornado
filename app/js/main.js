@@ -107,10 +107,12 @@
         }
 
         // Create tornado:
-        NUM_SEGMENTS = 80
+        NUM_SEGMENTS = 300
+        SEGMENT_HEIGHT = 5
+        TORNADO_WIDTH = 5
         for (var i = 0; i < NUM_SEGMENTS; i++) {
             var segment = new THREE.Object3D();
-            var geometry = new THREE.TorusGeometry((NUM_SEGMENTS * 10) - (i * 10), 16, 4, 7);
+            var geometry = new THREE.TorusGeometry((NUM_SEGMENTS * TORNADO_WIDTH) - (i * TORNADO_WIDTH), SEGMENT_HEIGHT, 4, 7);
             var material = new THREE.MeshBasicMaterial({
                 color: '#14223E',
                 wireframe: true
@@ -119,7 +121,7 @@
             segment.add(mesh);
 
             segment.rotation.x = Math.PI / 2;
-            segment.position.y = -(i * 35) + (NUM_SEGMENTS * 35);
+            segment.position.y = -(i * SEGMENT_HEIGHT * 2) + (NUM_SEGMENTS * SEGMENT_HEIGHT * 2);
             segment.position.z -= 2000;
             segment.position.x -= 1500;
             segment.userData.spinSpeed = chance.floating({
@@ -187,6 +189,8 @@
         document.body.appendChild(renderer.domElement);
     }
 
+
+    var cameraSpeed = 1;
     function animate() {
 
         requestAnimationFrame(animate);
@@ -292,7 +296,7 @@
             cloud.position.x += 3;
         }
 
-        camera.position.z -= 1;
+        camera.position.z -= cameraSpeed;
 
         renderer.render(scene, camera);
     }
